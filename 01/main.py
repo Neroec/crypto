@@ -142,13 +142,12 @@ def generate_key_rsa(N=MAX_N):
     :param N: максимальное значение больших чисел
     :return: e, d, n - части ключей
     """
-    p = q = 1               # большие простые числа
+    q = p = generate_prime(N)   # большие простые числа
     while p == q:
-        p = generate_prime(N)
         q = generate_prime(N)
 
-    n = p * q               # криптомодуль
-    f = (p - 1) * (q - 1)   # функция Эйлера
+    n = p * q                   # криптомодуль
+    f = (p - 1) * (q - 1)       # функция Эйлера
 
     e = 1
     t = x = 2
