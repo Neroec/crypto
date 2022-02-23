@@ -146,12 +146,12 @@ def generate_g(N=MAX_N):
     """
     q = generate_prime(N)  # большие простые числа
     while True:
-        n = random(2, N)
+        n = random.randint(2, N)
         p = n * q + 1
         if is_prime(p):
             break
     while True:
-        a = random(1, p - 1)
+        a = random.randint(1, p - 1)
         g = mod_exp(a, n, p)
         if g != 1:
             break
@@ -171,15 +171,20 @@ def main():
     Точка входа в программу
     :return: None
     """
-    """e, d, n = generate_key_rsa()
-    print(f'Открытый ключ:\n({e}, {n})\nЗакрытый ключ:\n({d}, {n})\n')
-    m = mod_exp(M, d, n)
-    mm = mod_exp(m, e, n)
-    print(f'Сообщение: {M}\nС подписью: {m}\nПроверка подписи: {mm}')
-    if M == mm:
-        print(f'\033[32mПодпись верна!sdfsdf!!!')
+    x = random.randint(2, MAX_N)
+    y = random.randint(2, MAX_N)
+    g, q, p = generate_g()
+    X = mod_exp_dh(g, x, q, p)
+    print(f'Пользователь А отправил B через незащищенный канал связи:\n({X})')
+    Y = mod_exp_dh(g, y, q, p)
+    print(f'Пользователь B отправил A через незащищенный канал связи:\n({Y})')
+
+    k1 = mod_exp_dh(Y, x, q, p)
+    k2 = mod_exp_dh(X, y, q, p)
+    if k1 == k2:
+        print(f'Секретные ключи совпали:\n k = ({k1}) k\' = ({k2})')
     else:
-        print(f'\033[31mПодпись не верна!')"""
+        print(f'Секретные ключи НЕ совпали:\n k = ({k1}) k\' = ({k2})')
 
 
 if __name__ == '__main__':
