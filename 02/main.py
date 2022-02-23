@@ -134,36 +134,28 @@ def generate_prime(N=MAX_N):
     return n
 
 
-def generate_key_rsa(N=MAX_N):
+def generate_g(N=MAX_N):
     """
-    Генерирует части ключей по системе RSA
-    (e, n) - открытый  ключ
-    (d, n) - закрытый ключ
-    :param N: максимальное значение больших чисел
-    :return: e, d, n - части ключей
     """
-    q = p = generate_prime(N)   # большие простые числа
-    while p == q:
-        q = generate_prime(N)
-
-    n = p * q                   # криптомодуль
-    f = (p - 1) * (q - 1)       # функция Эйлера
-
-    e = 1
-    t = x = 2
-    while t > 1:
-        e += 2
-        t, x, _ = extended_euclid(e, f)
-    d = x % f
-    return e, d, n
-
+    q = generate_prime(N)   # большие простые числа
+    while True:
+        n = random(2, N)
+        p = n * q + 1
+        if is_prime(p):
+            break
+    while True:
+        a = random(1, p - 1)
+        g = mod_exp(a, n, p)
+        if g == 1:
+            break
+    return g, q, p
 
 def main():
     """
     Точка входа в программу
     :return: None
     """
-    e, d, n = generate_key_rsa()
+    """e, d, n = generate_key_rsa()
     print(f'Открытый ключ:\n({e}, {n})\nЗакрытый ключ:\n({d}, {n})\n')
     m = mod_exp(M, d, n)
     mm = mod_exp(m, e, n)
@@ -171,7 +163,7 @@ def main():
     if M == mm:
         print(f'\033[32mПодпись верна!sdfsdf!!!')
     else:
-        print(f'\033[31mПодпись не верна!')
+        print(f'\033[31mПодпись не верна!')"""
 
 
 if __name__ == '__main__':
