@@ -44,33 +44,6 @@ def euclid(a, b):
     return a + b
 
 
-def extended_euclid(a, b):
-    """
-    Расширенный алгоритм Евклида, вычисляющий НОД и коэффициенты x и y в
-    линейной комбинации d = a * x + b * y
-    :param a: первое число
-    :param b: второе число
-    :return: d - НОД, x - коэфф при a, y - коэфф при b
-    """
-    x = yy = 1
-    y = xx = 0
-    while b > 0:
-        q = a // b
-
-        t = b
-        b = a % b
-        a = t
-
-        t = xx
-        xx = x - q * xx
-        x = t
-
-        t = yy
-        yy = y - q * yy
-        y = t
-    return a, x, y
-
-
 def rabin_miller(n, r=COUNT_A):
     """
     Тест Рабина-Миллера на простое число
@@ -143,6 +116,9 @@ def generate_prime(N=MAX_N):
 
 def generate_g(N=MAX_N):
     """
+    Генерирует примитивный элемент g, а также простые числа p и q
+    :param N: максимальное значение больших чисел
+    :return: g, q, p - параметры для криптосистемы Деффи - Хеллмана
     """
     q = generate_prime(N)  # большие простые числа
     while True:
@@ -160,6 +136,12 @@ def generate_g(N=MAX_N):
 
 def mod_exp_dh(g, x, q, p):
     """
+    Возводит число g в степень x (x mod q) и вычисляет остаток от деления на p - ускоренный алгоритм
+    :param g: число
+    :param x: степень
+    :param q: делитель для степени
+    :param p: делитель
+    :return: g^(x mod q) mod p
     """
     xx = x % q
     X = mod_exp(g, xx, p)
