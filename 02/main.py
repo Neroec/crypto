@@ -120,7 +120,7 @@ def generate_g(N=MAX_N):
     :param N: максимальное значение больших чисел
     :return: g, q, p - параметры для криптосистемы Деффи - Хеллмана
     """
-    q = generate_prime(N)  # большие простые числа
+    q = generate_prime(2**256)  # большие простые числа
     while True:
         n = random.randint(2, N)
         p = n * q + 1
