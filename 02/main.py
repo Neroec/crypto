@@ -2,7 +2,6 @@ import random
 
 MAX_N = 10 ** 25  # верхняя граница чисел
 COUNT_A = 100  # количество проверок в тесте Рабина-Миллера
-M = 123456789  # сообщения для подписи
 
 
 def mod_exp(a, b, n):
@@ -120,14 +119,14 @@ def generate_g(N=MAX_N):
     :param N: максимальное значение больших чисел
     :return: g, q, p - параметры для криптосистемы Деффи - Хеллмана
     """
-    q = generate_prime(2**256)
+    q = generate_prime(2 ** 256)
     while True:
         n = random.randint(2, N)
         p = n * q + 1
         if is_prime(p):
             break
     while True:
-        a = random.randint(1, p - 1)
+        a = random.randint(2, p - 1)
         g = mod_exp(a, n, p)
         if g != 1:
             break
@@ -153,9 +152,9 @@ def main():
     Точка входа в программу
     :return: None
     """
-    x = random.randint(2, MAX_N)
-    y = random.randint(2, MAX_N)
     g, q, p = generate_g()
+    x = random.randint(2, p - 1)
+    y = random.randint(2, p - 1)
     X = mod_exp_dh(g, x, q, p)
     print(f'Пользователь А отправил B через незащищенный канал связи:\n({X})')
     Y = mod_exp_dh(g, y, q, p)
@@ -164,9 +163,9 @@ def main():
     k1 = mod_exp_dh(Y, x, q, p)
     k2 = mod_exp_dh(X, y, q, p)
     if k1 == k2:
-        print(f'Секретные ключи совпали:\n k = ({k1}) k\' = ({k2})')
+        print(f'\033[32mСекретные ключи совпали:\nk  = ({k1})\nk\' = ({k2})')
     else:
-        print(f'Секретные ключи НЕ совпали:\n k = ({k1}) k\' = ({k2})')
+        print(f'\033[31mСекретные ключи НЕ совпали:\nk  = ({k1})\nk\' = ({k2})')
 
 
 if __name__ == '__main__':
