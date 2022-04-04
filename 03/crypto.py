@@ -1,9 +1,14 @@
 from Cryptodome.Random import get_random_bytes
 from Cryptodome.Cipher import AES
+from Cryptodome.Hash import SHA256
+from Cryptodome.Signature import PKCS1_v1_5
+import rsa
+
 
 STANDARD_FILE_PATH = 'files/standard_file.txt'
 ENCRYPTED_FILE_PATH = 'files/encrypted_file.txt'
 DECRYPTED_FILE_PATH = 'files/decrypted_file.txt'
+ENCRYPTED_SIGNATURE_PATH = 'files/signature.txt'
 
 
 def generate_session_key(size=16):
@@ -48,3 +53,20 @@ def decrypt_file(session_key, in_path=ENCRYPTED_FILE_PATH, out_path=DECRYPTED_FI
             decrypted_data = cipher_aes.decrypt(data)
             output_file.write(decrypted_data)
             return decrypted_data.decode()
+
+
+def sign_file(private_key, public_key, in_path=STANDARD_FILE_PATH, out_path=ENCRYPTED_SIGNATURE_PATH):
+    signature = PKCS1_v1_5.new(private_key)
+    with open(in_path, 'rb') as input_file:
+        file_hash = SHA256.new(input_file.read())
+    signature = signature.sign(file_hash)
+    rsa.encrypt(signature, public_key, out_path)
+    return signature
+
+
+def verify_sign(public_key, private_key, file_path=DECRYPTED_FILE_PATH, signature_path=ENCRYPTED_SIGNATURE_PATH):
+    with open(file_path, 'rb') as input_file:
+        file_hash = SHA256.new(input_file.read())
+    decrypted_signature = rsa.decrypt(private_key, signature_path)
+    signature = PKCS1_v1_5.new(public_key)
+    return signature.verify(file_hash, decrypted_signature)

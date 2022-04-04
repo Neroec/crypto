@@ -1,5 +1,5 @@
 from Cryptodome.PublicKey import RSA
-from Cryptodome.Cipher import PKCS1_OAEP as cipher
+from Cryptodome.Cipher import PKCS1_OAEP
 
 
 PRIVATE_KEY_PATH = 'keys/encrypted_private_rsa_key.txt'
@@ -92,28 +92,78 @@ def get_private_key_pair(private_key: RSA.RsaKey):
     return private_key.d, private_key.n
 
 
-def encrypt_session_key(session_key, public_key, out_path=SESSION_KEY_PATH):
+def encrypt(messages, public_key, out_path=SESSION_KEY_PATH):
     """
-    Шифрует сессионный ключ и сохраняет его в файл
-    :param session_key: сообщение
+    Шифрует сообщение и сохраняет его в файл
+    :param messages: сообщение
     :param public_key: публичный ключ RSA
     :param out_path: путь к файлу для сохранения
-    :return: зашифрованный сессионный ключ
+    :return: зашифрованное сообщение
     """
+    msg = messages
+    if type(messages[0]) is str:
+        msg = messages.encode()
     with open(out_path, 'wb') as file:
-        cipher_rsa = cipher.new(public_key)
-        encrypted_message = cipher_rsa.encrypt(session_key)
-        file.write(encrypted_message)
-        return encrypted_message
+        cipher_rsa = PKCS1_OAEP.new(public_key)
+        step = 190
+        enc_msg = bytes()
+        for part in [msg[n:n+step] for n in range(0, len(msg), step)]:
+            encrypted_message = cipher_rsa.encrypt(part)
+            file.write(encrypted_message)
+            enc_msg += encrypted_message
+    return enc_msg
 
 
-def decrypt_session_key(private_key, in_path=SESSION_KEY_PATH):
+def decrypt(private_key, in_path=SESSION_KEY_PATH, mode='bytes'):
     """
-    Считывает зашифрованный сессионный ключ из файла и расшифровывает его
+    Считывает зашифрованное сообщение из файла и расшифровывает его
     :param private_key: приватный ключ RSA
-    :param in_path: путь к файлу с ключем
-    :return: расшифрованный сессионный ключ
+    :param in_path: путь к зашифрованному сообщению
+    :param mode: вид расшифрованного сообщения ('bytes', 'str')
+    :return: расшифрованное сообщение
     """
     with open(in_path, 'rb') as file:
-        cipher_rsa = cipher.new(private_key)
-        return cipher_rsa.decrypt(file.read())
+        cipher_rsa = PKCS1_OAEP.new(private_key)
+        step = 256
+        decrypted_data = bytes()
+        encrypted_data = file.read(step)
+        while len(encrypted_data) != 0:
+            decrypted_data += cipher_rsa.decrypt(encrypted_data)
+            encrypted_data = file.read(step)
+        if mode == 'str':
+            decrypted_data = decrypted_data.decode()
+        return decrypted_data
+
+
+# def encrypt(message, public_key, out_path=SESSION_KEY_PATH):
+#     """
+#     Шифрует сообщение и сохраняет его в файл
+#     :param message: сообщение
+#     :param public_key: публичный ключ RSA
+#     :param out_path: путь к файлу для сохранения
+#     :return: зашифрованное сообщение
+#     """
+#     msg = message
+#     if type(message) is str:
+#         msg = message.encode()
+#     with open(out_path, 'wb') as file:
+#         cipher_rsa = PKCS1_OAEP.new(public_key)
+#         encrypted_message = cipher_rsa.encrypt(msg)
+#         file.write(encrypted_message)
+#     return encrypted_message
+#
+#
+# def decrypt(private_key, in_path=SESSION_KEY_PATH, mode='bytes'):
+#     """
+#     Считывает зашифрованное сообщение из файла и расшифровывает его
+#     :param private_key: приватный ключ RSA
+#     :param in_path: путь к зашифрованному сообщению
+#     :param mode: вид расшифрованного сообщения ('bytes', 'str')
+#     :return: расшифрованное сообщение
+#     """
+#     with open(in_path, 'rb') as file:
+#         cipher_rsa = PKCS1_OAEP.new(private_key)
+#         decrypted_data = cipher_rsa.decrypt(file.read())
+#         if mode == 'str':
+#             decrypted_data = decrypted_data.decode()
+#         return decrypted_data
