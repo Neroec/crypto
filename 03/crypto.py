@@ -56,6 +56,14 @@ def decrypt_file(session_key, in_path=ENCRYPTED_FILE_PATH, out_path=DECRYPTED_FI
 
 
 def sign_file(private_key, public_key, in_path=STANDARD_FILE_PATH, out_path=ENCRYPTED_SIGNATURE_PATH):
+    """
+    Подписывает файл и сохраняет зашифрованную подпись в файл
+    :param private_key: приватный ключ подписывающего
+    :param public_key: публичный ключ проверяющего
+    :param in_path: путь к подписываемому файлу
+    :param out_path: путь к зашифрованной подписи
+    :return: None
+    """
     signature = PKCS1_v1_5.new(private_key)
     with open(in_path, 'rb') as input_file:
         file_hash = SHA256.new(input_file.read())
@@ -65,6 +73,14 @@ def sign_file(private_key, public_key, in_path=STANDARD_FILE_PATH, out_path=ENCR
 
 
 def verify_sign(public_key, private_key, file_path=DECRYPTED_FILE_PATH, signature_path=ENCRYPTED_SIGNATURE_PATH):
+    """
+    Проверяет подпись для файла
+    :param public_key: публичный ключ подписывающего
+    :param private_key: приватный ключ проверяющего
+    :param file_path: путь к расшифрованному файлу
+    :param signature_path: путь к зашифрованной подписи
+    :return: True - если подпись верна, False - иначе
+    """
     with open(file_path, 'rb') as input_file:
         file_hash = SHA256.new(input_file.read())
     decrypted_signature = rsa.decrypt(private_key, signature_path)

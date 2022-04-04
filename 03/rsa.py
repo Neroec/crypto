@@ -133,37 +133,3 @@ def decrypt(private_key, in_path=SESSION_KEY_PATH, mode='bytes'):
         if mode == 'str':
             decrypted_data = decrypted_data.decode()
         return decrypted_data
-
-
-# def encrypt(message, public_key, out_path=SESSION_KEY_PATH):
-#     """
-#     Шифрует сообщение и сохраняет его в файл
-#     :param message: сообщение
-#     :param public_key: публичный ключ RSA
-#     :param out_path: путь к файлу для сохранения
-#     :return: зашифрованное сообщение
-#     """
-#     msg = message
-#     if type(message) is str:
-#         msg = message.encode()
-#     with open(out_path, 'wb') as file:
-#         cipher_rsa = PKCS1_OAEP.new(public_key)
-#         encrypted_message = cipher_rsa.encrypt(msg)
-#         file.write(encrypted_message)
-#     return encrypted_message
-#
-#
-# def decrypt(private_key, in_path=SESSION_KEY_PATH, mode='bytes'):
-#     """
-#     Считывает зашифрованное сообщение из файла и расшифровывает его
-#     :param private_key: приватный ключ RSA
-#     :param in_path: путь к зашифрованному сообщению
-#     :param mode: вид расшифрованного сообщения ('bytes', 'str')
-#     :return: расшифрованное сообщение
-#     """
-#     with open(in_path, 'rb') as file:
-#         cipher_rsa = PKCS1_OAEP.new(private_key)
-#         decrypted_data = cipher_rsa.decrypt(file.read())
-#         if mode == 'str':
-#             decrypted_data = decrypted_data.decode()
-#         return decrypted_data
