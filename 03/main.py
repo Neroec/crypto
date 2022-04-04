@@ -22,6 +22,11 @@ def main():
 
     session_key = rsa.decrypt(private_key_1)
     crypto.decrypt_file(session_key)
+    print('Расшифрованное сообщение:')
+    with open(crypto.DECRYPTED_FILE_PATH, 'r') as file:
+        print(file.read())
+    print('Проверка подписи:')
+    print(crypto.verify_sign(public_key_2, private_key_1))
 
 
 if __name__ == '__main__':
