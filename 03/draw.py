@@ -214,6 +214,7 @@ def name_box_selected(_):
     from_name = session_from_box.get()
     to_name = session_to_box.get()
     logic.load_keys_box(session_key_from_box, session_key_from_box_values, from_name, to_name)
+    update_entries()
 
 
 def load_boxes():

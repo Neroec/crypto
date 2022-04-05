@@ -1,0 +1,9 @@
+# Директории
+files
+keys
+signatures
+.idea
+__pycache__
+
+# Конфиги
+./venv/pyvenv.cfg
