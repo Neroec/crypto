@@ -54,7 +54,7 @@ def decrypt_file(session_key, in_path=ENCRYPTED_FILE_PATH, out_path=DECRYPTED_FI
             cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
             decrypted_data = cipher_aes.decrypt(data)
             output_file.write(decrypted_data)
-            return decrypted_data.decode()
+            return decrypted_data
 
 
 def sign_file(private_key, public_key, in_path=STANDARD_FILE_PATH, out_path=ENCRYPTED_SIGNATURE_PATH):

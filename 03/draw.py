@@ -183,8 +183,14 @@ def session_button_click():
     logic.change_color(session_button, color)
 
 
-def add_button_click(entry, dir, text=None):
-    path = fd.askopenfilename(initialdir=dir, title='Выбор аудио', filetypes=[('Текстовые', 'txt')])
+def add_button_click(entry, dir, text=None, mode='open'):
+    if mode == 'save':
+        path = fd.asksaveasfilename(initialdir=dir, title='Выбор аудио', filetypes=[('Текстовые', 'txt'),
+                                                                                    ('Все', '*')])
+    else:
+        path = fd.askopenfilename(initialdir=dir, title='Выбор аудио', filetypes=[('Текстовые', 'txt'),
+                                                                                  ('Все', '*')])
+
     if path == '':
         return
 
@@ -192,7 +198,7 @@ def add_button_click(entry, dir, text=None):
 
     if text is None:
         return
-    with open(path, 'r') as file:
+    with open(path, 'rb') as file:
         logic.replace_object_data(text, file.read())
 
 
@@ -269,7 +275,7 @@ def encrypt():
         logic.change_color(session_key_entry, 'red')
         return
 
-    with open(out_path, 'r') as file:
+    with open(out_path, 'rb') as file:
         logic.replace_object_data(cypher_output_file_text, file.read())
 
 
@@ -297,7 +303,7 @@ def decrypt():
     ses_key = rsa.decrypt(private_key, session_key_path)
     crypto.decrypt_file(ses_key, in_path, out_path)
 
-    with open(out_path, 'r') as file:
+    with open(out_path, 'rb') as file:
         logic.replace_object_data(cypher_output_file_text, file.read())
 
 
@@ -415,7 +421,7 @@ def draw_all():
                                  lambda _: add_button_click(cypher_input_file_entry, dir1,
                                                             cypher_input_file_text))
     cypher_output_add_button.bind('<ButtonRelease-1>',
-                                  lambda _: add_button_click(cypher_output_file_entry, dir1))
+                                  lambda _: add_button_click(cypher_output_file_entry, dir1, mode='save'))
     cypher_input_file_entry.bind('<Enter>', lambda _: logic.change_color(cypher_input_file_entry, 'white',
                                                                          'readonlybackground'))
     cypher_output_file_entry.bind('<Enter>', lambda _: logic.change_color(cypher_output_file_entry,
