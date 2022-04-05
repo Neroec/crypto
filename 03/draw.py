@@ -4,6 +4,7 @@ import tkinter.ttk as ttk
 from tkinter import filedialog as fd
 import rsa
 import crypto
+import logic
 
 
 window = Tk()
@@ -31,7 +32,8 @@ generate_public_label = Label(generate_frame, text='Путь к публично
                               bg='white')
 generate_public_entry = Entry(generate_frame, font=f'Arial {FONT}', relief='solid', state='readonly',
                               readonlybackground='white')
-generate_button = Button(generate_frame, text='Сгенерировать', font=f'Arial {FONT}', bg='white')
+generate_generate_button = Button(generate_frame, text='Сгенерировать', font=f'Arial {FONT}', bg='white')
+generate_delete_button = Button(generate_frame, text='Удалить', font=f'Arial {FONT}', bg='white')
 
 # Настройки сессии
 session_frame = LabelFrame(window, text='Настройка сессии', font=f'Arial {FONT + 1}', bg='white')
@@ -86,45 +88,71 @@ signature_verify_button = Button(signature_frame, text='Проверить', fon
 signature_verify_label = Label(signature_frame, text='Ожидание проверки', font=f'Arial {FONT}', bg='white')
 
 
-def replace_object_data(object, data):
-    start = 0.0 if type(object) == Text else 0
-    old_state = object['state']
-    object['state'] = 'normal'
-    object.delete(start, END)
-    object.insert(END, data)
-    object['state'] = old_state
-
-
 def update_generate_paths():
     name = generate_name_entry.get()
 
-    data = f'{rsa.KEYS_DIR}{rsa.PRIVATE_KEYS_DIR}{name}.txt'
-    replace_object_data(generate_private_entry, data)
+    data = f'{rsa.PRIVATE_KEYS_DIR}{name}.txt'
+    logic.replace_object_data(generate_private_entry, data)
 
-    data = f'{rsa.KEYS_DIR}{rsa.PUBLIC_KEYS_DIR}{name}.txt'
-    replace_object_data(generate_public_entry, data)
-
-
-def change_color(object, color, mode='bg'):
-    object[mode] = color
+    data = f'{rsa.PUBLIC_KEYS_DIR}{name}.txt'
+    logic.replace_object_data(generate_public_entry, data)
 
 
-def generate_button_click():
+def generate_generate_button_click():
     window.focus()
     name = generate_name_entry.get()
     if name == '':
-        change_color(generate_name_entry, 'red')
+        logic.change_color(generate_name_entry, 'red')
         return
 
     secret_code = generate_code_entry.get()
     if secret_code == '':
-        change_color(generate_code_entry, 'red')
+        logic.change_color(generate_code_entry, 'red')
         return
 
     private_path = generate_private_entry.get()
     public_path = generate_public_entry.get()
     color = 'lightgreen' if rsa.generate_keys(secret_code, private_path, public_path) else 'red'
-    change_color(generate_button, color)
+    logic.change_color(generate_generate_button, color)
+
+    if color == 'lightgreen':
+        try:
+            session_from_box_values.index(name)
+        except ValueError:
+            session_from_box_values.append(name)
+            session_from_box['values'] = session_from_box_values
+
+        try:
+            session_to_box_values.index(name)
+        except ValueError:
+            session_to_box_values.append(name)
+            session_to_box['values'] = session_from_box_values
+
+
+def generate_delete_button_click():
+    window.focus()
+    name = generate_name_entry.get()
+    if name == '':
+        logic.change_color(generate_name_entry, 'red')
+        return
+
+    dirs_paths = [
+        f'{rsa.PRIVATE_KEYS_DIR}',
+        f'{rsa.PUBLIC_KEYS_DIR}',
+        f'{rsa.SESSION_KEYS_DIR}',
+        f'{crypto.FILES_DIR}',
+        f'{crypto.SIGNATURES_DIR}'
+    ]
+    for dir_path in dirs_paths:
+        logic.delete_files(dir_path, name)
+
+    logic.delete_from_combobox(session_from_box, session_from_box_values, name)
+    logic.delete_from_combobox(session_to_box, session_to_box_values, name)
+
+    from_name = session_from_box.get()
+    to_name = session_to_box.get()
+    logic.load_keys_box(session_key_from_box, session_key_from_box_values, from_name, to_name)
+    update_entries()
 
 
 def session_button_click():
@@ -134,13 +162,13 @@ def session_button_click():
     to_name = session_to_box.get()
     path = session_key_entry.get()
     if from_name == '' or to_name == ''\
-            or path.find(f'{rsa.KEYS_DIR}{rsa.SESSION_KEYS_DIR}{from_name}_to_{to_name}') == -1:
-        change_color(session_key_entry, 'red')
+            or path.find(f'{rsa.SESSION_KEYS_DIR}{from_name}_to_{to_name}') == -1:
+        logic.change_color(session_key_entry, 'red')
         return
 
     try:
         session_key = crypto.generate_session_key()
-        public_key = rsa.get_public_key(f'{rsa.KEYS_DIR}{rsa.PUBLIC_KEYS_DIR}{to_name}.txt')
+        public_key = rsa.get_public_key(f'{rsa.PUBLIC_KEYS_DIR}{to_name}.txt')
         rsa.encrypt(session_key, public_key, path)
         color = 'lightgreen'
     except ValueError:
@@ -152,7 +180,7 @@ def session_button_click():
         session_key_from_box_values.append(path)
         session_key_from_box['values'] = session_key_from_box_values
     session_key_from_box.set(path)
-    change_color(session_button, color)
+    logic.change_color(session_button, color)
 
 
 def add_button_click(entry, dir, text=None):
@@ -160,12 +188,12 @@ def add_button_click(entry, dir, text=None):
     if path == '':
         return
 
-    replace_object_data(entry, path)
+    logic.replace_object_data(entry, path)
 
     if text is None:
         return
     with open(path, 'r') as file:
-        replace_object_data(text, file.read())
+        logic.replace_object_data(text, file.read())
 
 
 def update_entries():
@@ -173,43 +201,24 @@ def update_entries():
     if from_name == '':
         return
     data = f'{crypto.SIGNATURES_DIR}{from_name}.txt'
-    replace_object_data(signature_file_entry, data)
+    logic.replace_object_data(signature_file_entry, data)
 
     to_name = session_to_box.get()
     if to_name == '':
         return
-    data = f'{rsa.KEYS_DIR}{rsa.SESSION_KEYS_DIR}{from_name}_to_{to_name}.txt'
-    replace_object_data(session_key_entry, data)
+    data = f'{rsa.SESSION_KEYS_DIR}{from_name}_to_{to_name}.txt'
+    logic.replace_object_data(session_key_entry, data)
 
 
 def name_box_selected(_):
     from_name = session_from_box.get()
     to_name = session_to_box.get()
-    load_keys_box(session_key_from_box, session_key_from_box_values, from_name, to_name)
-
-
-def load_keys_box(box, values, from_name, to_name):
-    if from_name == '' or to_name == '':
-        return
-    values.clear()
-    length = len(from_name) + 4 + len(to_name)
-    for _, __, filenames in walk(f'{rsa.KEYS_DIR}{rsa.SESSION_KEYS_DIR}'):
-        for filename in filenames:
-            if filename[:length].find(f'{from_name}_to_{to_name}') != -1:
-                values.append(f'{rsa.KEYS_DIR}{rsa.SESSION_KEYS_DIR}{filename}')
-
-    box['values'] = values
-    if len(values) > 0:
-        box.set(values[0])
-    else:
-        box.set('')
-
-    update_entries()
+    logic.load_keys_box(session_key_from_box, session_key_from_box_values, from_name, to_name)
 
 
 def load_boxes():
     i = 0
-    for _, _, filenames in walk(f'{rsa.KEYS_DIR}{rsa.PRIVATE_KEYS_DIR}'):
+    for _, _, filenames in walk(f'{rsa.PRIVATE_KEYS_DIR}'):
         for filename in filenames:
             name = filename.replace('.txt', '')
             session_from_box_values.append(name)
@@ -220,53 +229,58 @@ def load_boxes():
 
     if len(session_from_box_values) > 0:
         session_from_box.set(session_from_box_values[0])
+    length = len(session_to_box_values)
+    if length > 1:
+        session_to_box.set(session_to_box_values[1])
+    elif length > 0:
         session_to_box.set(session_to_box_values[0])
 
     from_name = session_from_box.get()
     to_name = session_to_box.get()
-    load_keys_box(session_key_from_box, session_key_from_box_values, from_name, to_name)
+    logic.load_keys_box(session_key_from_box, session_key_from_box_values, from_name, to_name)
+    update_entries()
 
 
 def change_place():
     data = cypher_output_file_entry.get()
-    replace_object_data(cypher_input_file_entry, data)
-    replace_object_data(cypher_output_file_entry, '')
+    logic.replace_object_data(cypher_input_file_entry, data)
+    logic.replace_object_data(cypher_output_file_entry, '')
 
     data = cypher_output_file_text.get(0.0, END)
-    replace_object_data(cypher_input_file_text, data)
-    replace_object_data(cypher_output_file_text, '')
+    logic.replace_object_data(cypher_input_file_text, data)
+    logic.replace_object_data(cypher_output_file_text, '')
 
 
 def encrypt():
     in_path = cypher_input_file_entry.get()
     if in_path == '':
-        change_color(cypher_input_file_entry, 'red', 'readonlybackground')
+        logic.change_color(cypher_input_file_entry, 'red', 'readonlybackground')
         return
 
     out_path = cypher_output_file_entry.get()
     if out_path == '':
-        change_color(cypher_output_file_entry, 'red', 'readonlybackground')
+        logic.change_color(cypher_output_file_entry, 'red', 'readonlybackground')
         return
 
     try:
         crypto.encrypt_file(session_key, in_path, out_path)
     except ValueError:
-        change_color(session_key_entry, 'red')
+        logic.change_color(session_key_entry, 'red')
         return
 
     with open(out_path, 'r') as file:
-        replace_object_data(cypher_output_file_text, file.read())
+        logic.replace_object_data(cypher_output_file_text, file.read())
 
 
 def decrypt():
     in_path = cypher_input_file_entry.get()
     if in_path == '':
-        change_color(cypher_input_file_entry, 'red', 'readonlybackground')
+        logic.change_color(cypher_input_file_entry, 'red', 'readonlybackground')
         return
 
     out_path = cypher_output_file_entry.get()
     if out_path == '':
-        change_color(cypher_output_file_entry, 'red', 'readonlybackground')
+        logic.change_color(cypher_output_file_entry, 'red', 'readonlybackground')
         return
 
     to_name = session_to_box.get()
@@ -275,15 +289,15 @@ def decrypt():
 
     try:
         private_key = rsa.get_private_key(secret_code,
-                                          f'{rsa.KEYS_DIR}{rsa.PRIVATE_KEYS_DIR}{to_name}.txt')
+                                          f'{rsa.PRIVATE_KEYS_DIR}{to_name}.txt')
     except ValueError:
-        change_color(session_code_entry, 'red')
+        logic.change_color(session_code_entry, 'red')
         return
     ses_key = rsa.decrypt(private_key, session_key_path)
     crypto.decrypt_file(ses_key, in_path, out_path)
 
     with open(out_path, 'r') as file:
-        replace_object_data(cypher_output_file_text, file.read())
+        logic.replace_object_data(cypher_output_file_text, file.read())
 
 
 def sign():
@@ -294,13 +308,13 @@ def sign():
     signature_path = signature_file_entry.get()
 
     try:
-        private_key = rsa.get_private_key(secret_code, f'{rsa.KEYS_DIR}{rsa.PRIVATE_KEYS_DIR}{from_name}.txt')
-        public_key = rsa.get_public_key(f'{rsa.KEYS_DIR}{rsa.PUBLIC_KEYS_DIR}{to_name}.txt')
+        private_key = rsa.get_private_key(secret_code, f'{rsa.PRIVATE_KEYS_DIR}{from_name}.txt')
+        public_key = rsa.get_public_key(f'{rsa.PUBLIC_KEYS_DIR}{to_name}.txt')
         crypto.sign_file(private_key, public_key, in_path, signature_path)
         color = 'lightgreen'
     except ValueError:
         color = 'red'
-    change_color(signature_sign_button, color)
+    logic.change_color(signature_sign_button, color)
 
 
 def verify():
@@ -311,17 +325,17 @@ def verify():
     signature_path = signature_file_entry.get()
 
     try:
-        public_key = rsa.get_public_key(f'{rsa.KEYS_DIR}{rsa.PUBLIC_KEYS_DIR}{from_name}.txt')
-        private_key = rsa.get_private_key(secret_code, f'{rsa.KEYS_DIR}{rsa.PRIVATE_KEYS_DIR}{to_name}.txt')
+        public_key = rsa.get_public_key(f'{rsa.PUBLIC_KEYS_DIR}{from_name}.txt')
+        private_key = rsa.get_private_key(secret_code, f'{rsa.PRIVATE_KEYS_DIR}{to_name}.txt')
         result = crypto.verify_sign(public_key, private_key, in_path, signature_path)
     except ValueError:
-        change_color(session_code_entry, 'red')
+        logic.change_color(session_code_entry, 'red')
         return
 
     text = 'Подпись верна' if result else 'Подпись ложна'
     color = 'lightgreen' if result else 'red'
     signature_verify_label['text'] = text
-    change_color(signature_verify_label, color)
+    logic.change_color(signature_verify_label, color)
 
 
 def reset_verify_label():
@@ -333,6 +347,7 @@ def draw_all():
     window.title('Гибридная криптосистема')
     window.geometry('1250x700+10+10')
     window.resizable(width=False, height=False)
+    logic.check_and_create_dirs()
 
     # Области
     generate_frame.place(anchor='nw', relwidth=1, relx=0, relheight=0.2, rely=0)
@@ -349,15 +364,18 @@ def draw_all():
     generate_private_entry.place(anchor='n', relx=0.25, relwidth=0.48, rely=0.47, relheight=0.2)
     generate_public_label.place(anchor='n', relx=0.75, relwidth=0.48, rely=0.26, relheight=0.2)
     generate_public_entry.place(anchor='n', relx=0.75, relwidth=0.48, rely=0.47, relheight=0.2)
-    generate_button.place(anchor='n', relx=0.5, relwidth=0.3, rely=0.7, relheight=0.27)
+    generate_generate_button.place(anchor='n', relx=0.425, relwidth=0.14, rely=0.7, relheight=0.27)
+    generate_delete_button.place(anchor='n', relx=0.575, relwidth=0.14, rely=0.7, relheight=0.27)
     # События
     sv1 = StringVar()
     sv1.trace("wu", lambda _, __, ___, ____=sv1: update_generate_paths())
     generate_name_entry['textvariable'] = sv1
-    generate_name_entry.bind('<FocusIn>', lambda _: change_color(generate_name_entry, 'white'))
-    generate_code_entry.bind('<FocusIn>', lambda _: change_color(generate_code_entry, 'white'))
-    generate_button['command'] = generate_button_click
-    generate_button.bind('<Leave>', lambda _: change_color(generate_button, 'white'))
+    generate_name_entry.bind('<FocusIn>', lambda _: logic.change_color(generate_name_entry, 'white'))
+    generate_code_entry.bind('<FocusIn>', lambda _: logic.change_color(generate_code_entry, 'white'))
+    generate_generate_button['command'] = generate_generate_button_click
+    generate_delete_button['command'] = generate_delete_button_click
+    generate_generate_button.bind('<Leave>', lambda _: logic.change_color(generate_generate_button, 'white'))
+    generate_delete_button.bind('<Leave>', lambda _: logic.change_color(generate_delete_button, 'white'))
 
     # Настройка сессии
     session_from_label.place(anchor='nw', relx=0.01, relwidth=0.3, rely=0.04, relheight=0.2)
@@ -375,9 +393,9 @@ def draw_all():
     session_from_box.bind("<<ComboboxSelected>>", name_box_selected)
     session_to_box.bind("<<ComboboxSelected>>", name_box_selected)
     session_button['command'] = session_button_click
-    session_key_entry.bind('<Enter>', lambda _: change_color(session_key_entry, 'white'))
-    session_code_entry.bind('<FocusIn>', lambda _: change_color(session_code_entry, 'white'))
-    session_button.bind('<Leave>', lambda _: change_color(session_button, 'white'))
+    session_key_entry.bind('<Enter>', lambda _: logic.change_color(session_key_entry, 'white'))
+    session_code_entry.bind('<FocusIn>', lambda _: logic.change_color(session_code_entry, 'white'))
+    session_button.bind('<Leave>', lambda _: logic.change_color(session_button, 'white'))
 
     # Шифрование/Расшифрование
     cypher_input_file_label.place(anchor='n', relx=0.25, relwidth=0.5, rely=0.02, relheight=0.08)
@@ -397,10 +415,10 @@ def draw_all():
                                                             cypher_input_file_text))
     cypher_output_add_button.bind('<ButtonRelease-1>',
                                   lambda _: add_button_click(cypher_output_file_entry, dir1))
-    cypher_input_file_entry.bind('<Enter>', lambda _: change_color(cypher_input_file_entry, 'white',
-                                                                   'readonlybackground'))
-    cypher_output_file_entry.bind('<Enter>', lambda _: change_color(cypher_output_file_entry, 'white',
-                                                                    'readonlybackground'))
+    cypher_input_file_entry.bind('<Enter>', lambda _: logic.change_color(cypher_input_file_entry, 'white',
+                                                                         'readonlybackground'))
+    cypher_output_file_entry.bind('<Enter>', lambda _: logic.change_color(cypher_output_file_entry,
+                                                                          'white', 'readonlybackground'))
     cypher_arrow_button['command'] = change_place
     cypher_encrypt_button['command'] = encrypt
     cypher_decrypt_button['command'] = decrypt
@@ -417,7 +435,7 @@ def draw_all():
                                    lambda _: add_button_click(signature_file_entry, dir2))
     signature_sign_button['command'] = sign
     signature_verify_button['command'] = verify
-    signature_sign_button.bind('<Leave>', lambda _: change_color(signature_sign_button, 'white'))
+    signature_sign_button.bind('<Leave>', lambda _: logic.change_color(signature_sign_button, 'white'))
     signature_verify_button.bind('<Leave>', lambda _: reset_verify_label())
 
     load_boxes()

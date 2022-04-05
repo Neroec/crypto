@@ -3,12 +3,12 @@ from Cryptodome.Cipher import PKCS1_OAEP
 
 
 KEYS_DIR = 'keys/'
-PRIVATE_KEYS_DIR = 'private_keys/'
-PUBLIC_KEYS_DIR = 'public_keys/'
-SESSION_KEYS_DIR = 'session_keys/'
-PRIVATE_KEY_PATH = 'keys/encrypted_private_rsa_key.txt'
-PUBLIC_KEY_PATH = 'keys/public_rsa_key.txt'
-SESSION_KEY_PATH = 'keys/encrypted_session_key.txt'
+PRIVATE_KEYS_DIR = f'{KEYS_DIR}private_keys/'
+PUBLIC_KEYS_DIR = f'{KEYS_DIR}public_keys/'
+SESSION_KEYS_DIR = f'{KEYS_DIR}session_keys/'
+PRIVATE_KEY_PATH = f'{KEYS_DIR}encrypted_private_rsa_key.txt'
+PUBLIC_KEY_PATH = f'{KEYS_DIR}public_rsa_key.txt'
+SESSION_KEY_PATH = f'{KEYS_DIR}encrypted_session_key.txt'
 
 
 def save_private_key(key: RSA.RsaKey, secret_code, private_key_path=PRIVATE_KEY_PATH):
