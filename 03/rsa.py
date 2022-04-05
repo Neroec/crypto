@@ -2,6 +2,10 @@ from Cryptodome.PublicKey import RSA
 from Cryptodome.Cipher import PKCS1_OAEP
 
 
+KEYS_DIR = 'keys/'
+PRIVATE_KEYS_DIR = 'private_keys/'
+PUBLIC_KEYS_DIR = 'public_keys/'
+SESSION_KEYS_DIR = 'session_keys/'
 PRIVATE_KEY_PATH = 'keys/encrypted_private_rsa_key.txt'
 PUBLIC_KEY_PATH = 'keys/public_rsa_key.txt'
 SESSION_KEY_PATH = 'keys/encrypted_session_key.txt'
@@ -42,11 +46,31 @@ def generate_keys(secret_code, private_key_path=PRIVATE_KEY_PATH, public_key_pat
     :param secret_code: секретный код для шифрования приватного ключа
     :param private_key_path: путь к файлу для сохранения приватного ключа
     :param public_key_path: путь к файлу для сохранения публичного ключа
-    :return: None
+    :return: True - если ключи были сгенерированы, False - при ошибке
     """
-    key = RSA.generate(2048)
-    save_private_key(key, secret_code, private_key_path)
-    save_public_key(key, public_key_path)
+    try:
+        key = RSA.generate(2048)
+        save_private_key(key, secret_code, private_key_path)
+        save_public_key(key, public_key_path)
+    except ValueError:
+        return False
+    return True
+
+
+def check_secret_code(secret_code, private_key_path=PRIVATE_KEY_PATH):
+    """
+    Проверяет секретный код на правильность
+    :param secret_code: секретный ключ
+    :param private_key_path: путь к файлу с приватным ключом
+    :return: True - если код верный, False - иначе
+    """
+    with open(private_key_path, 'r') as file:
+        data = file.read()
+        try:
+            RSA.importKey(data, secret_code)
+        except ValueError:
+            return False
+        return True
 
 
 def get_public_key(public_key_path=PUBLIC_KEY_PATH):

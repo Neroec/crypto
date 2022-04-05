@@ -5,10 +5,12 @@ from Cryptodome.Signature import PKCS1_v1_5
 import rsa
 
 
-STANDARD_FILE_PATH = 'files/standard_file.txt'
-ENCRYPTED_FILE_PATH = 'files/encrypted_file.txt'
-DECRYPTED_FILE_PATH = 'files/decrypted_file.txt'
-ENCRYPTED_SIGNATURE_PATH = 'files/signature.txt'
+FILES_DIR = 'files/'
+STANDARD_FILE_PATH = f'{FILES_DIR}standard_file.txt'
+ENCRYPTED_FILE_PATH = f'{FILES_DIR}encrypted_file.txt'
+DECRYPTED_FILE_PATH = f'{FILES_DIR}decrypted_file.txt'
+ENCRYPTED_SIGNATURE_PATH = f'{FILES_DIR}signature.txt'
+SIGNATURES_DIR = 'signatures/'
 
 
 def generate_session_key(size=16):
