@@ -1,10 +1,11 @@
-from os import walk
+import os
 from tkinter import *
 import tkinter.ttk as ttk
 from tkinter import filedialog as fd
 import rsa
 import crypto
 import logic
+import dialog
 
 
 window = Tk()
@@ -12,129 +13,89 @@ window = Tk()
 # Константы
 FONT = 11
 
-# Переменные
-session_key = bytes()
-
-# Генерация ключей
-generate_frame = LabelFrame(window, text='Генерация ключей', font=f'Arial {FONT + 1}', bg='white')
-generate_name_label = Label(generate_frame, text='Имя:', font=f'Arial {FONT}', justify='right',
-                            bg='white')
-generate_name_entry = Entry(generate_frame, font=f'Arial {FONT}', justify='center', relief='solid')
-generate_code_label = Label(generate_frame, text='Секретный код:', font=f'Arial {FONT}', justify='right',
-                            bg='white')
-generate_code_entry = Entry(generate_frame, font=f'Arial {FONT}', justify='center', show='*',
-                            relief='solid')
-generate_private_label = Label(generate_frame, text='Путь к приватному ключу:', font=f'Arial {FONT}',
-                               bg='white')
-generate_private_entry = Entry(generate_frame, font=f'Arial {FONT}', relief='solid', state='readonly',
-                               readonlybackground='white')
-generate_public_label = Label(generate_frame, text='Путь к публичному ключу:', font=f'Arial {FONT}',
-                              bg='white')
-generate_public_entry = Entry(generate_frame, font=f'Arial {FONT}', relief='solid', state='readonly',
-                              readonlybackground='white')
-generate_generate_button = Button(generate_frame, text='Сгенерировать', font=f'Arial {FONT}', bg='white')
-generate_delete_button = Button(generate_frame, text='Удалить', font=f'Arial {FONT}', bg='white')
-
 # Настройки сессии
 session_frame = LabelFrame(window, text='Настройка сессии', font=f'Arial {FONT + 1}', bg='white')
-session_keys_label = Label(session_frame, text='Сессионные ключи:', font=f'Arial {FONT}', bg='white')
-session_from_label = Label(session_frame, text='От кого:', font=f'Arial {FONT}', bg='white')
-session_from_box_values = []
-session_from_box = ttk.Combobox(session_frame, font=f'Arial {FONT}', justify='center', state='readonly')
-session_key_from_box_values = []
-session_key_from_box = ttk.Combobox(session_frame, font=f'Arial {FONT}', justify='center',
-                                    state='readonly')
-session_to_label = Label(session_frame, text='Кому:', font=f'Arial {FONT}', bg='white')
-session_to_box_values = []
-session_to_box = ttk.Combobox(session_frame, font=f'Arial {FONT}', justify='center', state='readonly')
-session_code_label = Label(session_frame, text='Секретный код:', font=f'Arial {FONT}', bg='white')
-session_code_entry = Entry(session_frame, font=f'Arial {FONT}', show='*', relief='solid')
-session_key_label = Label(session_frame, text='Путь к сессионному ключу:', font=f'Arial {FONT}',
+from_label = Label(session_frame, text='Я:', font=f'Arial {FONT}', bg='white')
+from_box_values = []
+from_box = ttk.Combobox(session_frame, font=f'Arial {FONT}', justify='center', state='readonly')
+name_delete_button_image = PhotoImage(file='images/delete_button.png')
+name_delete_button = Button(session_frame, image=name_delete_button_image,
+                            font=f'Arial {FONT}', bg='white')
+name_add_button_image = PhotoImage(file='images/add_button.png')
+name_add_button = Button(session_frame, image=name_add_button_image,
+                         font=f'Arial {FONT}', bg='white')
+keys_label = Label(session_frame, text='Сессионные ключи:', font=f'Arial {FONT}', bg='white')
+keys_box_values = []
+keys_box = ttk.Combobox(session_frame, font=f'Arial {FONT}', justify='center',
+                        state='readonly')
+key_delete_button_image = PhotoImage(file='images/delete_button.png')
+key_delete_button = Button(session_frame, image=key_delete_button_image,
+                           font=f'Arial {FONT}', bg='white')
+key_add_button_image = PhotoImage(file='images/add_button.png')
+key_add_button = Button(session_frame, image=key_add_button_image,
+                        font=f'Arial {FONT}', bg='white')
+to_label = Label(session_frame, text='Кто-то:', font=f'Arial {FONT}', bg='white')
+to_box_values = []
+to_box = ttk.Combobox(session_frame, font=f'Arial {FONT}', justify='center', state='readonly')
+code_label = Label(session_frame, text='Секретный код:', font=f'Arial {FONT}', bg='white')
+code_entry = Entry(session_frame, font=f'Arial {FONT}', show='*', relief='solid', justify='center')
+
+# Шифрование/Расшифрование/Подпись
+cypher_frame = LabelFrame(window, text='Шифрование/Расшифрование/Подпись', font=f'Arial {FONT + 1}',
                           bg='white')
-session_key_entry = Entry(session_frame, font=f'Arial {FONT}', relief='solid')
-session_button = Button(session_frame, text='Сгенерировать', font=f'Arial {FONT}', bg='white')
-
-# Шифрование/Расшифрование
-cypher_frame = LabelFrame(window, text='Шифрование/Расшифрование', font=f'Arial {FONT + 1}', bg='white')
-add_button_image = PhotoImage(file='images/add_button.png')
-cypher_input_file_label = Label(cypher_frame, text='Входной файл:', font=f'Arial {FONT}', bg='white')
-cypher_input_file_entry = Entry(cypher_frame, font=f'Arial {FONT}', relief='solid', state='readonly',
-                                readonlybackground='white')
-cypher_input_add_button = Button(cypher_frame, image=add_button_image, font=f'Arial {FONT}', bg='white',
-                                 relief='flat')
-cypher_input_file_text = Text(cypher_frame, wrap=WORD, font=f'Arial {FONT}', relief='solid',
-                              state='disabled', padx=5, pady=3)
-cypher_output_file_label = Label(cypher_frame, text='Выходной файл:', font=f'Arial {FONT}', bg='white')
-cypher_output_file_entry = Entry(cypher_frame, font=f'Arial {FONT}', relief='solid', state='readonly',
-                                 readonlybackground='white')
-cypher_output_add_button = Button(cypher_frame, image=add_button_image, font=f'Arial {FONT}', bg='white',
-                                  relief='flat')
-cypher_output_file_text = Text(cypher_frame, wrap=WORD, font=f'Arial {FONT}', relief='solid',
-                               state='disabled', padx=5, pady=3)
-cypher_encrypt_button = Button(cypher_frame, text='Зашифровать', font=f'Arial {FONT}', bg='white')
-cypher_decrypt_button = Button(cypher_frame, text='Расшифровать', font=f'Arial {FONT}', bg='white')
-arrow_button_image = PhotoImage(file='images/arrow_button.png')
-cypher_arrow_button = Button(cypher_frame, image=arrow_button_image, font=f'Arial {FONT}', bg='white',
-                             relief='flat')
-
-# Цифровая подпись
-signature_frame = LabelFrame(window, text='Цифровая подпись', font=f'Arial {FONT + 1}', bg='white')
-signature_file_label = Label(signature_frame, text='Путь к подписи:', font=f'Arial {FONT}', bg='white')
-signature_file_entry = Entry(signature_frame, font=f'Arial {FONT}', relief='solid')
-signature_file_add_button = Button(signature_frame, image=add_button_image, font=f'Arial {FONT}',
-                                   bg='white', relief='flat')
-signature_sign_button = Button(signature_frame, text='Подписать', font=f'Arial {FONT}', bg='white')
-signature_verify_button = Button(signature_frame, text='Проверить', font=f'Arial {FONT}', bg='white')
-signature_verify_label = Label(signature_frame, text='Ожидание проверки', font=f'Arial {FONT}', bg='white')
+add_file_button_image = PhotoImage(file='images/add_file_button.png')
+file_label = Label(cypher_frame, text='Входной файл:', font=f'Arial {FONT}', bg='white')
+file_entry = Entry(cypher_frame, font=f'Arial {FONT}', relief='solid', state='readonly')
+file_add_button = Button(cypher_frame, image=add_file_button_image, font=f'Arial {FONT}', bg='white',
+                         relief='flat')
+file_text = Text(cypher_frame, wrap=WORD, font=f'Arial {FONT}', relief='solid',
+                 state='disabled', padx=5, pady=3)
+encrypt_button = Button(cypher_frame, text='Зашифровать', font=f'Arial {FONT}', bg='white', disabledforeground='gray77')
+decrypt_button = Button(cypher_frame, text='Расшифровать', font=f'Arial {FONT}', bg='white', disabledforeground='gray77')
+sign_button = Button(cypher_frame, text='Подписать', font=f'Arial {FONT}', bg='white', disabledforeground='gray77')
+verify_button = Button(cypher_frame, text='Проверить', font=f'Arial {FONT}', bg='white', disabledforeground='gray77')
+signature_label = Label(cypher_frame, text='', font=f'Arial {FONT + 5}', bg='white')
 
 
-def update_generate_paths():
-    name = generate_name_entry.get()
-
-    data = f'{rsa.PRIVATE_KEYS_DIR}{name}.txt'
-    logic.replace_object_data(generate_private_entry, data)
-
-    data = f'{rsa.PUBLIC_KEYS_DIR}{name}.txt'
-    logic.replace_object_data(generate_public_entry, data)
+def get_options():
+    return from_box.get(), to_box.get(), keys_box.get(), code_entry.get()
 
 
-def generate_generate_button_click():
+def update_state():
     window.focus()
-    name = generate_name_entry.get()
+    logic.load_keys_box(keys_box, keys_box_values,
+                        from_box.get(), to_box.get())
+    check_buttons_state()
+    signature_label['text'] = ''
+
+
+def validate_name(name):
     if name == '':
-        logic.change_color(generate_name_entry, 'red')
-        return
+        return -1
 
-    secret_code = generate_code_entry.get()
-    if secret_code == '':
-        logic.change_color(generate_code_entry, 'red')
-        return
+    for value in from_box_values:
+        if value == name:
+            return -1
 
-    private_path = generate_private_entry.get()
-    public_path = generate_public_entry.get()
-    color = 'lightgreen' if rsa.generate_keys(secret_code, private_path, public_path) else 'red'
-    logic.change_color(generate_generate_button, color)
-
-    if color == 'lightgreen':
-        try:
-            session_from_box_values.index(name)
-        except ValueError:
-            session_from_box_values.append(name)
-            session_from_box['values'] = session_from_box_values
-
-        try:
-            session_to_box_values.index(name)
-        except ValueError:
-            session_to_box_values.append(name)
-            session_to_box['values'] = session_from_box_values
+    return 0
 
 
-def generate_delete_button_click():
+def add_name(name, code):
+    from_box_values.append(name)
+    to_box_values.append(name)
+
+    from_box['values'] = from_box_values
+    to_box['values'] = to_box_values
+
+    generate_new_keys(name, code)
+
+    from_box.set(name)
+    update_state()
+
+
+def delete_name_button_clicked():
     window.focus()
-    name = generate_name_entry.get()
-    if name == '':
-        logic.change_color(generate_name_entry, 'red')
-        return
+    name = from_box.get()
 
     dirs_paths = [
         f'{rsa.PRIVATE_KEYS_DIR}',
@@ -146,208 +107,221 @@ def generate_delete_button_click():
     for dir_path in dirs_paths:
         logic.delete_files(dir_path, name)
 
-    logic.delete_from_combobox(session_from_box, session_from_box_values, name)
-    logic.delete_from_combobox(session_to_box, session_to_box_values, name)
+    logic.delete_from_combobox(from_box, from_box_values, name)
+    logic.delete_from_combobox(to_box, to_box_values, name)
 
-    from_name = session_from_box.get()
-    to_name = session_to_box.get()
-    logic.load_keys_box(session_key_from_box, session_key_from_box_values, from_name, to_name)
-    update_entries()
+    if len(from_box_values) > 0:
+        from_box.set(from_box_values[0])
+    else:
+        from_box.set('')
+
+    update_state()
 
 
-def session_button_click():
-    global session_key
+def validate_key_name(name):
+    if name == '' or name.find('encrypted_') != -1:
+        return -1
+
+    for value in keys_box_values:
+        if name == value:
+            return -1
+
+    return 0
+
+
+def generate_new_keys(name, code):
     window.focus()
-    from_name = session_from_box.get()
-    to_name = session_to_box.get()
-    path = session_key_entry.get()
-    if from_name == '' or to_name == ''\
-            or path.find(f'{rsa.SESSION_KEYS_DIR}{from_name}_to_{to_name}') == -1:
-        logic.change_color(session_key_entry, 'red')
+    private_path = f'{rsa.PRIVATE_KEYS_DIR}{name}.txt'
+    public_path = f'{rsa.PUBLIC_KEYS_DIR}{name}.txt'
+    rsa.generate_keys(code, private_path, public_path)
+
+
+def delete_key_button_clicked():
+    from_name, to_name, key_name, _ = get_options()
+
+    logic.delete_session_keys(from_name, to_name, key_name)
+    parts = [key_name, f'encrypted_{key_name}', key_name.replace('encrypted_', '')]
+    for part in parts:
+        logic.delete_from_combobox(keys_box, keys_box_values, part)
+
+    if len(keys_box_values) > 0:
+        keys_box.set(keys_box_values[0])
+    else:
+        keys_box.set('')
+
+    check_buttons_state()
+
+
+def generate_session_key(key_name):
+    from_name = from_box.get()
+    to_name = to_box.get()
+
+    session_key = crypto.generate_session_key()
+    logic.save_session_key(from_name, to_name, key_name, session_key)
+
+    keys_box_values.append(key_name)
+    keys_box['values'] = keys_box_values
+    keys_box.set(key_name)
+
+    check_buttons_state()
+
+
+def clear_buttons_state():
+    buttons = [encrypt_button, decrypt_button, sign_button, verify_button]
+    for button in buttons:
+        button['state'] = 'normal'
+
+
+def change_buttons_state(buttons, states):
+    for i in range(len(buttons)):
+        buttons[i]['state'] = 'normal' if states[i] else 'disable'
+
+
+def check_buttons_state():
+    from_name, to_name, key_name, _ = get_options()
+    buttons = [name_delete_button, key_add_button, key_delete_button]
+    from_flag = from_name != ''
+    to_flag = to_name != ''
+    key_flag = key_name != ''
+    if not from_flag:
+        change_buttons_state(buttons, [False, False, False])
+    elif not to_flag and not key_flag:
+        change_buttons_state(buttons, [True, False, False])
+    else:
+        change_buttons_state(buttons, [True, True, True])
+
+    buttons = [encrypt_button, decrypt_button, sign_button, verify_button]
+    path = file_entry.get()
+    if path == '':
+        change_buttons_state(buttons, [False, False, False, False])
         return
 
-    try:
-        session_key = crypto.generate_session_key()
-        public_key = rsa.get_public_key(f'{rsa.PUBLIC_KEYS_DIR}{to_name}.txt')
-        rsa.encrypt(session_key, public_key, path)
-        color = 'lightgreen'
-    except ValueError:
-        color = 'red'
+    common_file_name = os.path.basename(path).replace('encrypted_', '').replace('decrypted_', '')
+    encrypted_flag = path.find('encrypted_') != -1
+    decrypted_flag = path.find('decrypted_') != -1
+    verify_path = f'{crypto.SIGNATURES_DIR}{to_name}_{common_file_name}'
+    verify_flag = os.path.exists(verify_path)
 
-    try:
-        session_key_from_box_values.index(path)
-    except ValueError:
-        session_key_from_box_values.append(path)
-        session_key_from_box['values'] = session_key_from_box_values
-    session_key_from_box.set(path)
-    logic.change_color(session_button, color)
-
-
-def add_button_click(entry, dir, text=None, mode='open'):
-    if mode == 'save':
-        path = fd.asksaveasfilename(initialdir=dir, title='Выбор аудио', filetypes=[('Текстовые', 'txt'),
-                                                                                    ('Все', '*')])
+    if encrypted_flag:
+        change_buttons_state(buttons, [False, True, False, False])
+    elif decrypted_flag:
+        if verify_flag:
+            change_buttons_state(buttons, [False, False, False, True])
+        else:
+            change_buttons_state(buttons, [False, False, False, False])
+    elif key_flag:
+        change_buttons_state(buttons, [True, False, True, False])
     else:
-        path = fd.askopenfilename(initialdir=dir, title='Выбор аудио', filetypes=[('Текстовые', 'txt'),
-                                                                                  ('Все', '*')])
+        change_buttons_state(buttons, [False, False, True, False])
 
+
+def add_file_button_click():
+    logic.change_color(file_entry, 'gray95', 'readonlybackground')
+    path = fd.askopenfilename(initialdir=crypto.FILES_DIR, title='Выбор файла',
+                              filetypes=[('Текстовые', 'txt'), ('Все', '*')])
     if path == '':
         return
 
-    logic.replace_object_data(entry, path)
-
-    if text is None:
-        return
+    logic.replace_object_data(file_entry, path)
     with open(path, 'rb') as file:
-        logic.replace_object_data(text, file.read())
+        logic.replace_object_data(file_text, file.read())
 
-
-def update_entries():
-    from_name = session_from_box.get()
-    if from_name == '':
-        return
-    data = f'{crypto.SIGNATURES_DIR}{from_name}.txt'
-    logic.replace_object_data(signature_file_entry, data)
-
-    to_name = session_to_box.get()
-    if to_name == '':
-        return
-    data = f'{rsa.SESSION_KEYS_DIR}{from_name}_to_{to_name}.txt'
-    logic.replace_object_data(session_key_entry, data)
-
-
-def name_box_selected(_):
-    from_name = session_from_box.get()
-    to_name = session_to_box.get()
-    logic.load_keys_box(session_key_from_box, session_key_from_box_values, from_name, to_name)
-    update_entries()
-
-
-def load_boxes():
-    i = 0
-    for _, _, filenames in walk(f'{rsa.PRIVATE_KEYS_DIR}'):
-        for filename in filenames:
-            name = filename.replace('.txt', '')
-            session_from_box_values.append(name)
-            session_to_box_values.append(name)
-            i += 1
-    session_from_box['values'] = session_from_box_values
-    session_to_box['values'] = session_to_box_values
-
-    if len(session_from_box_values) > 0:
-        session_from_box.set(session_from_box_values[0])
-    length = len(session_to_box_values)
-    if length > 1:
-        session_to_box.set(session_to_box_values[1])
-    elif length > 0:
-        session_to_box.set(session_to_box_values[0])
-
-    from_name = session_from_box.get()
-    to_name = session_to_box.get()
-    logic.load_keys_box(session_key_from_box, session_key_from_box_values, from_name, to_name)
-    update_entries()
-
-
-def change_place():
-    data = cypher_output_file_entry.get()
-    logic.replace_object_data(cypher_input_file_entry, data)
-    logic.replace_object_data(cypher_output_file_entry, '')
-
-    data = cypher_output_file_text.get(0.0, END)
-    logic.replace_object_data(cypher_input_file_text, data)
-    logic.replace_object_data(cypher_output_file_text, '')
+    signature_label['text'] = ''
+    check_buttons_state()
 
 
 def encrypt():
-    in_path = cypher_input_file_entry.get()
-    if in_path == '':
-        logic.change_color(cypher_input_file_entry, 'red', 'readonlybackground')
+    common_path = file_entry.get()
+    if common_path == '':
+        logic.change_color(file_entry, 'red', 'readonlybackground')
         return
 
-    out_path = cypher_output_file_entry.get()
-    if out_path == '':
-        logic.change_color(cypher_output_file_entry, 'red', 'readonlybackground')
-        return
-
+    from_name, to_name, key_name, code = get_options()
+    encrypted_path = logic.get_encrypted_file_path(common_path)
     try:
-        crypto.encrypt_file(session_key, in_path, out_path)
+        session_key = logic.read_session_key(from_name, to_name, key_name, code)
+        crypto.encrypt_file(session_key, common_path, encrypted_path)
     except ValueError:
-        logic.change_color(session_key_entry, 'red')
+        keys_box.set('Bad key!')
         return
 
-    with open(out_path, 'rb') as file:
-        logic.replace_object_data(cypher_output_file_text, file.read())
+    logic.replace_object_data(file_entry, encrypted_path)
+    with open(encrypted_path, 'rb') as file:
+        logic.replace_object_data(file_text, file.read())
+
+    signature_label['text'] = ''
+    check_buttons_state()
 
 
 def decrypt():
-    in_path = cypher_input_file_entry.get()
-    if in_path == '':
-        logic.change_color(cypher_input_file_entry, 'red', 'readonlybackground')
+    window.focus()
+    encrypted_path = file_entry.get()
+    if encrypted_path == '':
+        logic.change_color(file_entry, 'red', 'readonlybackground')
         return
 
-    out_path = cypher_output_file_entry.get()
-    if out_path == '':
-        logic.change_color(cypher_output_file_entry, 'red', 'readonlybackground')
+    decrypted_path = logic.get_decrypted_file_path(encrypted_path)
+    from_name, to_name, key_name, code = get_options()
+    try:
+        session_key = logic.read_session_key(from_name, to_name, key_name, code)
+    except ValueError:
+        logic.change_color(code_entry, 'red')
         return
-
-    to_name = session_to_box.get()
-    secret_code = session_code_entry.get()
-    session_key_path = session_key_entry.get()
 
     try:
-        private_key = rsa.get_private_key(secret_code,
-                                          f'{rsa.PRIVATE_KEYS_DIR}{to_name}.txt')
+        crypto.decrypt_file(session_key, encrypted_path, decrypted_path)
     except ValueError:
-        logic.change_color(session_code_entry, 'red')
+        keys_box.set('Bad key!')
         return
-    ses_key = rsa.decrypt(private_key, session_key_path)
-    crypto.decrypt_file(ses_key, in_path, out_path)
 
-    with open(out_path, 'rb') as file:
-        logic.replace_object_data(cypher_output_file_text, file.read())
+    logic.replace_object_data(file_entry, decrypted_path)
+    with open(decrypted_path, 'rb') as file:
+        logic.replace_object_data(file_text, file.read())
+
+    signature_label['text'] = ''
+    check_buttons_state()
 
 
 def sign():
-    in_path = cypher_input_file_entry.get()
-    from_name = session_from_box.get()
-    to_name = session_to_box.get()
-    secret_code = session_code_entry.get()
-    signature_path = signature_file_entry.get()
+    window.focus()
+    common_path = file_entry.get()
+    if common_path == '':
+        logic.change_color(file_entry, 'red', 'readonlybackground')
+        return
+    from_name, to_name, _, code = get_options()
 
+    private_key_path = logic.get_private_key_path(from_name)
     try:
-        private_key = rsa.get_private_key(secret_code, f'{rsa.PRIVATE_KEYS_DIR}{from_name}.txt')
-        public_key = rsa.get_public_key(f'{rsa.PUBLIC_KEYS_DIR}{to_name}.txt')
-        crypto.sign_file(private_key, public_key, in_path, signature_path)
-        color = 'lightgreen'
+        private_key = rsa.get_private_key(code, private_key_path)
     except ValueError:
-        color = 'red'
-    logic.change_color(signature_sign_button, color)
+        logic.change_color(code_entry, 'red')
+        return
+
+    signature_path = logic.get_signature_path(common_path, from_name)
+    crypto.sign_file(private_key, common_path, signature_path)
+    signature_label['text'] = 'Файл подписан'
+    logic.change_color(signature_label, 'black', 'fg')
+    check_buttons_state()
 
 
 def verify():
-    in_path = cypher_input_file_entry.get()
-    from_name = session_from_box.get()
-    to_name = session_to_box.get()
-    secret_code = session_code_entry.get()
-    signature_path = signature_file_entry.get()
-
-    try:
-        public_key = rsa.get_public_key(f'{rsa.PUBLIC_KEYS_DIR}{from_name}.txt')
-        private_key = rsa.get_private_key(secret_code, f'{rsa.PRIVATE_KEYS_DIR}{to_name}.txt')
-        result = crypto.verify_sign(public_key, private_key, in_path, signature_path)
-    except ValueError:
-        logic.change_color(session_code_entry, 'red')
+    decrypted_path = file_entry.get()
+    if decrypted_path == '':
+        logic.change_color(file_entry, 'red', 'readonlybackground')
         return
+
+    from_name, to_name, _, code = get_options()
+    public_key_path = logic.get_public_key_path(to_name)
+    public_key = rsa.get_public_key(public_key_path)
+
+    signature_path = logic.get_signature_path(decrypted_path, to_name)
+    result = crypto.verify_sign(public_key, decrypted_path, signature_path)
 
     text = 'Подпись верна' if result else 'Подпись ложна'
     color = 'lightgreen' if result else 'red'
-    signature_verify_label['text'] = text
-    logic.change_color(signature_verify_label, color)
-
-
-def reset_verify_label():
-    signature_verify_label['text'] = 'Ожидание проверки'
-    signature_verify_label['bg'] = 'white'
+    signature_label['text'] = text
+    logic.change_color(signature_label, color, 'fg')
+    check_buttons_state()
 
 
 def draw_all():
@@ -357,92 +331,52 @@ def draw_all():
     logic.check_and_create_dirs()
 
     # Области
-    generate_frame.place(anchor='nw', relwidth=1, relx=0, relheight=0.2, rely=0)
-    session_frame.place(anchor='nw', relwidth=1, relx=0, relheight=0.2, rely=0.2)
-    cypher_frame.place(anchor='nw', relwidth=1, relx=0, relheight=0.5, rely=0.4)
-    signature_frame.place(anchor='nw', relwidth=1, relx=0, relheight=0.1, rely=0.9)
-
-    # Генерация ключа
-    generate_name_label.place(anchor='nw', relx=0.01, relwidth=0.05, rely=0.04, relheight=0.2)
-    generate_name_entry.place(anchor='nw', relx=0.07, relwidth=0.35, rely=0.04, relheight=0.2)
-    generate_code_label.place(anchor='nw', relx=0.43, relwidth=0.1, rely=0.04, relheight=0.2)
-    generate_code_entry.place(anchor='nw', relx=0.54, relwidth=0.45, rely=0.04, relheight=0.2)
-    generate_private_label.place(anchor='n', relx=0.25, relwidth=0.48, rely=0.26, relheight=0.2)
-    generate_private_entry.place(anchor='n', relx=0.25, relwidth=0.48, rely=0.47, relheight=0.2)
-    generate_public_label.place(anchor='n', relx=0.75, relwidth=0.48, rely=0.26, relheight=0.2)
-    generate_public_entry.place(anchor='n', relx=0.75, relwidth=0.48, rely=0.47, relheight=0.2)
-    generate_generate_button.place(anchor='n', relx=0.425, relwidth=0.14, rely=0.7, relheight=0.27)
-    generate_delete_button.place(anchor='n', relx=0.575, relwidth=0.14, rely=0.7, relheight=0.27)
-    # События
-    sv1 = StringVar()
-    sv1.trace("wu", lambda _, __, ___, ____=sv1: update_generate_paths())
-    generate_name_entry['textvariable'] = sv1
-    generate_name_entry.bind('<FocusIn>', lambda _: logic.change_color(generate_name_entry, 'white'))
-    generate_code_entry.bind('<FocusIn>', lambda _: logic.change_color(generate_code_entry, 'white'))
-    generate_generate_button['command'] = generate_generate_button_click
-    generate_delete_button['command'] = generate_delete_button_click
-    generate_generate_button.bind('<Leave>', lambda _: logic.change_color(generate_generate_button, 'white'))
-    generate_delete_button.bind('<Leave>', lambda _: logic.change_color(generate_delete_button, 'white'))
+    session_frame.place(anchor='nw', relwidth=1, relx=0, relheight=0.2, rely=0)
+    cypher_frame.place(anchor='nw', relwidth=1, relx=0, relheight=0.8, rely=0.2)
 
     # Настройка сессии
-    session_from_label.place(anchor='nw', relx=0.01, relwidth=0.3, rely=0.04, relheight=0.2)
-    session_to_label.place(anchor='ne', relx=0.99, relwidth=0.3, rely=0.04, relheight=0.2)
-    session_keys_label.place(anchor='n', relx=0.5, relwidth=0.2, rely=0.04, relheight=0.2)
-    session_from_box.place(anchor='nw', relx=0.01, relwidth=0.3, rely=0.25, relheight=0.2)
-    session_to_box.place(anchor='ne', relx=0.99, relwidth=0.3, rely=0.25, relheight=0.2)
-    session_key_from_box.place(anchor='n', relx=0.5, relwidth=0.3, rely=0.25, relheight=0.2)
-    session_code_label.place(anchor='nw', relx=0.01, relwidth=0.2, rely=0.47, relheight=0.2)
-    session_code_entry.place(anchor='nw', relx=0.01, relwidth=0.2, rely=0.68, relheight=0.2)
-    session_key_label.place(anchor='nw', relx=0.22, relwidth=0.5, rely=0.47, relheight=0.2)
-    session_key_entry.place(anchor='nw', relx=0.22, relwidth=0.5, rely=0.68, relheight=0.2)
-    session_button.place(anchor='nw', relx=0.74, relwidth=0.25, rely=0.63, relheight=0.3)
+    from_label.place(anchor='n', relx=0.25, relwidth=0.4, rely=0.04, relheight=0.2)
+    from_box.place(anchor='n', relx=0.25, relwidth=0.4, rely=0.25, relheight=0.2)
+    name_delete_button.place(anchor='nw', relx=0.474, relwidth=0.02, rely=0.25, relheight=0.2)
+    name_add_button.place(anchor='nw', relx=0.452, relwidth=0.02, rely=0.25, relheight=0.2)
+    to_label.place(anchor='n', relx=0.75, relwidth=0.4, rely=0.04, relheight=0.2)
+    to_box.place(anchor='n', relx=0.75, relwidth=0.4, rely=0.25, relheight=0.2)
+    code_label.place(anchor='n', relx=0.25, relwidth=0.4, rely=0.47, relheight=0.2)
+    code_entry.place(anchor='n', relx=0.25, relwidth=0.4, rely=0.68, relheight=0.2)
+    keys_label.place(anchor='n', relx=0.75, relwidth=0.4, rely=0.47, relheight=0.2)
+    keys_box.place(anchor='n', relx=0.75, relwidth=0.4, rely=0.68, relheight=0.2)
+    key_delete_button.place(anchor='nw', relx=0.974, relwidth=0.02, rely=0.68, relheight=0.2)
+    key_add_button.place(anchor='nw', relx=0.952, relwidth=0.02, rely=0.68, relheight=0.2)
     # События
-    session_from_box.bind("<<ComboboxSelected>>", name_box_selected)
-    session_to_box.bind("<<ComboboxSelected>>", name_box_selected)
-    session_button['command'] = session_button_click
-    session_key_entry.bind('<Enter>', lambda _: logic.change_color(session_key_entry, 'white'))
-    session_code_entry.bind('<FocusIn>', lambda _: logic.change_color(session_code_entry, 'white'))
-    session_button.bind('<Leave>', lambda _: logic.change_color(session_button, 'white'))
+    from_box.bind('<<ComboboxSelected>>', lambda _: update_state())
+    to_box.bind('<<ComboboxSelected>>', lambda _: update_state())
+    keys_box.bind('<<ComboboxSelected>>', lambda _: window.focus())
+    keys_box.bind('<FocusIn>', lambda _: logic.change_color(keys_box, 'black', 'foreground'))
+    name_delete_button['command'] = delete_name_button_clicked
+    name_add_button['command'] = lambda: dialog.show_add_name_dialog(window, FONT, validate_name, add_name)
+    key_delete_button['command'] = delete_key_button_clicked
+    key_add_button['command'] = lambda: dialog.show_add_key_dialog(window, FONT, validate_key_name,
+                                                                   generate_session_key)
+    code_entry.bind('<FocusIn>', lambda _: logic.change_color(code_entry, 'white'))
 
     # Шифрование/Расшифрование
-    cypher_input_file_label.place(anchor='n', relx=0.25, relwidth=0.5, rely=0.02, relheight=0.08)
-    cypher_arrow_button.place(anchor='n', relx=0.5, relwidth=0.053, rely=-0.005, relheight=0.11)
-    cypher_input_file_entry.place(anchor='nw', relx=0.005, relwidth=0.467, rely=0.11, relheight=0.08)
-    cypher_input_add_button.place(anchor='nw', relx=0.475, relwidth=0.02, rely=0.11, relheight=0.08)
-    cypher_input_file_text.place(anchor='nw', relx=0.005, relwidth=0.49, rely=0.2, relheight=0.68)
-    cypher_output_file_label.place(anchor='n', relx=0.75, relwidth=0.5, rely=0.02, relheight=0.08)
-    cypher_output_file_entry.place(anchor='nw', relx=0.505, relwidth=0.467, rely=0.11, relheight=0.08)
-    cypher_output_add_button.place(anchor='nw', relx=0.975, relwidth=0.02, rely=0.11, relheight=0.08)
-    cypher_output_file_text.place(anchor='nw', relx=0.505, relwidth=0.49, rely=0.2, relheight=0.68)
-    cypher_encrypt_button.place(anchor='n', relx=0.39, relwidth=0.2, rely=0.89, relheight=0.1)
-    cypher_decrypt_button.place(anchor='n', relx=0.61, relwidth=0.2, rely=0.89, relheight=0.1)
-    dir1 = f'{crypto.FILES_DIR}'
-    cypher_input_add_button.bind('<ButtonRelease-1>',
-                                 lambda _: add_button_click(cypher_input_file_entry, dir1,
-                                                            cypher_input_file_text))
-    cypher_output_add_button.bind('<ButtonRelease-1>',
-                                  lambda _: add_button_click(cypher_output_file_entry, dir1, mode='save'))
-    cypher_input_file_entry.bind('<Enter>', lambda _: logic.change_color(cypher_input_file_entry, 'white',
-                                                                         'readonlybackground'))
-    cypher_output_file_entry.bind('<Enter>', lambda _: logic.change_color(cypher_output_file_entry,
-                                                                          'white', 'readonlybackground'))
-    cypher_arrow_button['command'] = change_place
-    cypher_encrypt_button['command'] = encrypt
-    cypher_decrypt_button['command'] = decrypt
+    file_label.place(anchor='n', relx=0.5, relwidth=0.5, rely=0.02, relheight=0.05)
+    file_entry.place(anchor='n', relx=0.5, relwidth=0.8, rely=0.07, relheight=0.05)
+    file_add_button.place(anchor='nw', relx=0.905, relwidth=0.02, rely=0.07, relheight=0.05)
+    file_text.place(anchor='n', relx=0.5, relwidth=0.98, rely=0.13, relheight=0.72)
+    encrypt_button.place(anchor='nw', relx=0.01, relwidth=0.15, rely=0.88, relheight=0.1)
+    decrypt_button.place(anchor='nw', relx=0.17, relwidth=0.15, rely=0.88, relheight=0.1)
+    sign_button.place(anchor='nw', relx=0.33, relwidth=0.15, rely=0.88, relheight=0.1)
+    verify_button.place(anchor='nw', relx=0.49, relwidth=0.15, rely=0.88, relheight=0.1)
+    signature_label.place(anchor='nw', relx=0.65, relwidth=0.34, rely=0.88, relheight=0.1)
+    file_add_button.bind('<ButtonRelease-1>', lambda _: add_file_button_click())
+    encrypt_button['command'] = encrypt
+    decrypt_button['command'] = decrypt
+    sign_button['command'] = sign
+    verify_button['command'] = verify
 
-    # Цифровая подпись
-    signature_file_label.place(anchor='nw', relx=0.01, relwidth=0.5, rely=0.01, relheight=0.46)
-    signature_file_entry.place(anchor='nw', relx=0.01, relwidth=0.5, rely=0.48, relheight=0.46)
-    signature_file_add_button.place(anchor='nw', relx=0.515, relwidth=0.02, rely=0.44, relheight=0.54)
-    signature_sign_button.place(anchor='n', relx=0.69, relwidth=0.16, rely=0.01, relheight=0.49)
-    signature_verify_button.place(anchor='n', relx=0.87, relwidth=0.16, rely=0.01, relheight=0.49)
-    signature_verify_label.place(anchor='n', relx=0.78, relwidth=0.345, rely=0.51, relheight=0.49)
-    dir2 = f'{crypto.SIGNATURES_DIR}'
-    signature_file_add_button.bind('<ButtonRelease-1>',
-                                   lambda _: add_button_click(signature_file_entry, dir2))
-    signature_sign_button['command'] = sign
-    signature_verify_button['command'] = verify
-    signature_sign_button.bind('<Leave>', lambda _: logic.change_color(signature_sign_button, 'white'))
-    signature_verify_button.bind('<Leave>', lambda _: reset_verify_label())
-
-    load_boxes()
+    logic.load_name_box(from_box, from_box_values, 'from')
+    logic.load_name_box(to_box, to_box_values, 'to')
+    logic.load_keys_box(keys_box, keys_box_values,
+                        from_box.get(), to_box.get())
+    check_buttons_state()
